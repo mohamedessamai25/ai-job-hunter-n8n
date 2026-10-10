@@ -111,7 +111,7 @@
             {
               "id": "ff47603f-717a-4b78-a2f2-f5de7c1485c4",
               "leftValue": "={{ $json.score }}",
-              "rightValue": 1,
+              "rightValue": 6,
               "operator": {
                 "type": "number",
                 "operation": "gte"
