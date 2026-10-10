@@ -1,0 +1,428 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 20,
+              "triggerAtMinute": 30
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        -432,
+        0
+      ],
+      "id": "e061ad8a-6580-4f98-a3da-8a770cf86fbb",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=قيّم الوظيفة دي:\nالعنوان: {{ $json.title }}\nالوصف: {{ $json.contentSnippet }}",
+        "options": {
+          "systemMessage": "إنت مساعد بيقيّم فرص الشغل والمشاريع لشخص مبتدئ-متوسط في المجال التقني.\n\nمهارات الشخص:\n- Python و Machine Learning و NLP\n- data annotation وتقييم LLM وجودة البيانات\n- بناء AI Agents وأتمتة الشغل باستخدام n8n وربط الـ LLM بالأدوات\n- كتابة prompts وتصميم workflows لعملاء\n\nالشخص بيدوّر على:\n- فرص ريموت أو فريلانس\n- مشاريع بناء AI agent أو automation لعميل أو شركة\n- وظايف مستوى مبتدئ لمتوسط\n\nقواعد التقييم (من 1 إلى 10):\n- 8 إلى 10: مناسبة جدًا (مثلاً: بناء AI agent، automation، data annotation، تقييم LLM)\n- 5 إلى 7: مناسبة جزئيًا\n- 1 إلى 4: غير مناسبة (مثلاً: تطلب خبرة senior أو 5 سنين فأكتر، أو مجال بعيد عن مهاراته)\n\nارجع الرد بصيغة JSON فقط بدون أي كلام زيادة، بالشكل ده:\n{\"score\": 7, \"reason\": \"سبب قصير بالعربي\", \"suitable\": true}"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        752,
+        0
+      ],
+      "id": "7eb1a1fd-01c8-4b85-ada4-d9b487b4ddf5",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-3.5-flash-lite",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.2,
+      "position": [
+        1088,
+        480
+      ],
+      "id": "094bd7d1-16d5-41d2-87ef-64e64084eeab",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "Rd6yA75eNYAnH3aj",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c3fa2c4c-af5a-48ec-9fc9-f46e2b9752a5",
+              "name": "score",
+              "value": "={{ JSON.parse($json.output.replace(/```json|```/g, '').trim()).score }}",
+              "type": "number"
+            },
+            {
+              "id": "53bb2ed3-07f3-4a57-ba27-535ed00a6d73",
+              "name": "reason",
+              "value": "={{ JSON.parse($json.output.replace(/```json|```/g, '').trim()).reason }}",
+              "type": "string"
+            },
+            {
+              "id": "3f3c4095-8540-4f9f-9bb9-a7785345f568",
+              "name": "title",
+              "value": "={{ $('Limit').item.json.title }}",
+              "type": "string"
+            },
+            {
+              "id": "2aa2c514-2f52-40bb-8f67-e460cbfff6b3",
+              "name": "link",
+              "value": "={{ $('Limit').item.json.link }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        1088,
+        0
+      ],
+      "id": "3b792fdb-c43d-4b6a-8cb6-036ef6770e0e",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "ff47603f-717a-4b78-a2f2-f5de7c1485c4",
+              "leftValue": "={{ $json.score }}",
+              "rightValue": 1,
+              "operator": {
+                "type": "number",
+                "operation": "gte"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.3,
+      "position": [
+        1312,
+        0
+      ],
+      "id": "0dbfeedf-47f6-4c4f-8e2b-4079068ecbfb",
+      "name": "Filter"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=اكتب مسودة proposal قصيرة بالإنجليزي (من 5 إلى 7 سطور) لوظيفة فريلانس/ريموت.\n\nالوظيفة: {{ $json.title }}\nسبب مناسبتها: {{ $json.reason }}\n\nعن المتقدم: متخصص في الذكاء الاصطناعي، عنده خبرة في Python وMachine Learning وNLP وتقييم LLM وجودة البيانات، وبيبني AI agents وأنظمة أتمتة باستخدام n8n.\n\nالقواعد: ابدأ بجملة تخص الوظيفة دي بالذات، اذكر مهارتين مناسبتين بس، واختم بجملة تدعو للتواصل. لا تذكر أن المتقدم طالب أو مبتدئ. من غير مبالغة ولا ادعاء خبرة أو مشاريع مش موجودة.\n\nأرجع نص الـ proposal فقط بالإنجليزي، بدون أي مقدمة أو شرح أو علامات تنصيص.\n\nاذكر فقط المهارات الموجودة في وصف المتقدم أعلاه. لا تضف أي خبرة أو أدوات أو سنين خبرة غير مذكورة.",
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        1504,
+        144
+      ],
+      "id": "7295e051-2c76-46af-96be-81c45d6b0202",
+      "name": "Basic LLM Chain"
+    },
+    {
+      "parameters": {
+        "chatId": "YOUR_TELEGRAM_CHAT_ID",
+        "text": "=🆕 وظيفة مناسبة ({{ $('Filter').item.json.score }}/10)\n\n{{ $('Filter').item.json.title }}\n\n🔗 {{ $('Filter').item.json.link }}\n\n✍️ Proposal:\n  {{ $json.text }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1888,
+        0
+      ],
+      "id": "f6585835-5f12-49f3-be79-58af6734bcbe",
+      "name": "Send a text message",
+      "webhookId": "bf4d2caa-dfda-4928-b157-41bc7f6a2b7b",
+      "credentials": {
+        "telegramApi": {
+          "id": "v4NXyMWHAjG9qm9K",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "YOUR_EMAIL@example.com",
+        "subject": "=  وظيفة مناسبة: {{ $('Filter').item.json.title }}",
+        "message": "=  Score: {{ $('Filter').item.json.score }}/10\n\n  Job link: {{ $('Filter').item.json.link }}\n\n  Proposal draft:\n  {{ $json.text }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1888,
+        304
+      ],
+      "id": "8ad92614-092f-4157-8916-55e96638346f",
+      "name": "Send a message",
+      "webhookId": "880b4c35-b752-432d-89d9-46ea2e3ecc8f",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "SxOrAJEG9kXl20v3",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "maxItems": 10
+      },
+      "type": "n8n-nodes-base.limit",
+      "typeVersion": 1,
+      "position": [
+        560,
+        0
+      ],
+      "id": "a45c7c53-7b8a-4588-a458-091e4cff8b3a",
+      "name": "Limit"
+    },
+    {
+      "parameters": {
+        "url": "https://jobicy.com/api/v2/remote-jobs?count=20",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        -256,
+        272
+      ],
+      "id": "f5a58618-d71f-40fb-aaed-e6d748d3f035",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "jobs",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        -48,
+        272
+      ],
+      "id": "61ba4cee-3095-4b37-8150-3f63161390b4",
+      "name": "Split Out"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "ac0cc77d-0de3-4e86-85c9-1594b822f71f",
+              "name": "title",
+              "value": "={{ $json.jobTitle }}",
+              "type": "string"
+            },
+            {
+              "id": "1f753cc4-4756-4cfd-8f36-a1ce12dc6ce0",
+              "name": "link",
+              "value": "={{ $json.url }}",
+              "type": "string"
+            },
+            {
+              "id": "a3d79dc1-2108-44d4-b283-82ef3254cbfa",
+              "name": "contentSnippet",
+              "value": "={{ $json.jobExcerpt }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        128,
+        272
+      ],
+      "id": "d6409961-4ff0-42cb-9672-fd6989d0f2a0",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {
+        "operation": "removeItemsSeenInPreviousExecutions",
+        "dedupeValue": "=  {{ $json.link }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.removeDuplicates",
+      "typeVersion": 2,
+      "position": [
+        336,
+        0
+      ],
+      "id": "9aee4b9f-1aaa-4728-8009-54867ccda69f",
+      "name": "Remove Duplicates"
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Filter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Limit": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Split Out",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "Remove Duplicates",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Remove Duplicates": {
+      "main": [
+        [
+          {
+            "node": "Limit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "7966344ecbfab9a70c28d8eae517aea88f774c32bf96e3e48ff1303f4bb113f5"
+  }
+}
